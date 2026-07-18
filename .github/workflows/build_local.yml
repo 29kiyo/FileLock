@@ -23,22 +23,24 @@ jobs:
         with:
           dotnet-version: "8.0.x"
 
-      # Windows固有のターゲットを許可するフラグを追加
       - name: Restore
         run: dotnet restore src/FileLock.csproj -p:EnableWindowsTargeting=true
 
-      # ここにも同様にフラグを追加
+      # v付きの文字列に対応するため、シェルスクリプトで v を削ってから publish を実行
       - name: Publish (self-contained single exe)
-        run: >
-          dotnet publish src/FileLock.csproj
-          -c Release
-          -r win-x64
-          --self-contained true
-          -p:PublishSingleFile=true
-          -p:IncludeNativeLibrariesForSelfExtract=true
-          -p:Version=${{ github.event.inputs.version }}
-          -p:EnableWindowsTargeting=true
-          -o publish
+        run: |
+          RAW_VERSION="${{ github.event.inputs.version }}"
+          CLEAN_VERSION="${RAW_VERSION#v}" # 先頭の 'v' を削除
+          
+          dotnet publish src/FileLock.csproj \
+            -c Release \
+            -r win-x64 \
+            --self-contained true \
+            -p:PublishSingleFile=true \
+            -p:IncludeNativeLibrariesForSelfExtract=true \
+            -p:Version=$CLEAN_VERSION \
+            -p:EnableWindowsTargeting=true \
+            -o publish
 
       - name: Build installer (Inno Setup via Wine)
         run: |
