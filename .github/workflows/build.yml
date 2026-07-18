@@ -26,6 +26,24 @@ jobs:
       - name: Restore
         run: dotnet restore src/FileLock.csproj
 
+      - name: Resolve version numbers
+        id: ver
+        shell: pwsh
+        run: |
+          # タグ名（例: v1.0.0）と、MSBuildのVersionプロパティ用の数値のみのバージョン（例: 1.0.0）を分ける
+          $tag = "${{ github.event.inputs.version }}"
+          $numeric = $tag.TrimStart("v", "V")
+          if ($numeric -notmatch '^\d+(\.\d+){0,3}$') {
+            # 想定外の形式(例: v1.0-beta)の場合は先頭の数値部分だけを拾い、それ以外は0.0.1にフォールバック
+            if ($numeric -match '^\d+(\.\d+){0,3}') {
+              $numeric = $Matches[0]
+            } else {
+              $numeric = "0.0.1"
+            }
+          }
+          echo "tag=$tag" >> $env:GITHUB_OUTPUT
+          echo "numeric=$numeric" >> $env:GITHUB_OUTPUT
+
       - name: Publish (self-contained single exe)
         run: >
           dotnet publish src/FileLock.csproj
@@ -34,7 +52,7 @@ jobs:
           --self-contained true
           -p:PublishSingleFile=true
           -p:IncludeNativeLibrariesForSelfExtract=true
-          -p:Version=${{ github.event.inputs.version }}
+          -p:Version=${{ steps.ver.outputs.numeric }}
           -o publish
 
       - name: Install Inno Setup
@@ -44,7 +62,7 @@ jobs:
         shell: pwsh
         run: |
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
-            "/DMyAppVersion=${{ github.event.inputs.version }}" `
+            "/DMyAppVersion=${{ steps.ver.outputs.numeric }}" `
             installer\setup.iss
 
       - name: Create GitHub Release（アーティファクトは出さず直接リリース）
@@ -52,6 +70,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.event.inputs.version }}
-          name: FileLock ${{ github.event.inputs.version }}
-          files: installer/Output/FileLock-Setup-${{ github.event.inputs.version }}.exe
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: FileLock ${{ steps.ver.outputs.tag }}
+          files: installer/Output/FileLock-Setup-${{ steps.ver.outputs.numeric }}.exe
