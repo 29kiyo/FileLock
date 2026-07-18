@@ -14,15 +14,15 @@
 AppId={{B6E1B6D2-6F1E-4C7A-9B0A-FILELOCKAPP1}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
-DefaultDirName={autopf}\{#MyAppName}
+DefaultDirName={userpf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir=Output
 OutputBaseFilename=FileLock-Setup-{#MyAppVersion}
 Compression=lzma
 SolidCompression=yes
-; ACL(アクセス許可)を変更するため管理者権限でインストール・実行する
-PrivilegesRequired=admin
+; 家族向けの簡易ロック用途のため管理者権限は不要。ユーザーごと(自分のアカウントのみ)にインストールする。
+PrivilegesRequired=lowest
 ArchitecturesInstallIn64BitMode=x64
 SetupLogging=yes
 
@@ -35,7 +35,7 @@ Source: "..\publish\FileLock.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{userdesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Tasks]
 Name: desktopicon; Description: "デスクトップにアイコンを作成する"; GroupDescription: "追加のアイコン:"

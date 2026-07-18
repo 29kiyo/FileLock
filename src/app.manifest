@@ -4,8 +4,9 @@
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v2">
     <security>
       <requestedPrivileges xmlns="urn:schemas-microsoft-com:asm.v3">
-        <!-- ファイルのACL（アクセス許可）を変更するため管理者権限で実行 -->
-        <requestedExecutionLevel level="requireAdministrator" uiAccess="false"/>
+        <!-- 家族向けの簡易ロック用途のため管理者権限は不要にしている。
+             自分のアカウントが所有するファイルへのACL変更は管理者権限がなくても可能。 -->
+        <requestedExecutionLevel level="asInvoker" uiAccess="false"/>
       </requestedPrivileges>
     </security>
   </trustInfo>
