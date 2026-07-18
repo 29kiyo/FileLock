@@ -13,7 +13,6 @@ permissions:
 
 jobs:
   build:
-    # Linux (Docker) 環境へ変更
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -24,10 +23,11 @@ jobs:
         with:
           dotnet-version: "8.0.x"
 
+      # Windows固有のターゲットを許可するフラグを追加
       - name: Restore
-        run: dotnet restore src/FileLock.csproj
+        run: dotnet restore src/FileLock.csproj -p:EnableWindowsTargeting=true
 
-      # Linux上でWindows向けのEXEをクロスコンパイル
+      # ここにも同様にフラグを追加
       - name: Publish (self-contained single exe)
         run: >
           dotnet publish src/FileLock.csproj
@@ -37,9 +37,9 @@ jobs:
           -p:PublishSingleFile=true
           -p:IncludeNativeLibrariesForSelfExtract=true
           -p:Version=${{ github.event.inputs.version }}
+          -p:EnableWindowsTargeting=true
           -o publish
 
-      # Linuxコンテナ内でWineとInno Setupを動かしてコンパイル
       - name: Build installer (Inno Setup via Wine)
         run: |
           docker run --rm \
