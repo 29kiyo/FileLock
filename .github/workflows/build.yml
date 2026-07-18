@@ -27,15 +27,18 @@ jobs:
         run: dotnet restore src/FileLock.csproj
 
       - name: Publish (self-contained single exe)
-        run: >
-          dotnet publish src/FileLock.csproj
-          -c Release
-          -r win-x64
-          --self-contained true
-          -p:PublishSingleFile=true
-          -p:IncludeNativeLibrariesForSelfExtract=true
-          -p:Version=${{ github.event.inputs.version }}
-          -o publish
+        shell: pwsh
+        run: |
+          $version = "${{ github.event.inputs.version }}".TrimStart("v")
+      
+          dotnet publish src/FileLock.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:Version=$version `
+            -o publish
 
       - name: Install Inno Setup
         run: choco install innosetup -y
