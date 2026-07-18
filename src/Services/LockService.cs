@@ -1,6 +1,6 @@
+using System.IO;
 using System.Security.AccessControl;
 using System.Security.Principal;
-using System.IO;
 
 namespace FileLockApp.Services
 {

@@ -18,7 +18,7 @@ DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir=Output
-OutputBaseFilename=FileLockSetup
+OutputBaseFilename=FileLock-Setup-{#MyAppVersion}
 Compression=lzma
 SolidCompression=yes
 ; ACL(アクセス許可)を変更するため管理者権限でインストール・実行する
