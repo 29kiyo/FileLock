@@ -1,0 +1,57 @@
+name: Build and Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "リリースするバージョン（例: v1.0.0）"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore src/FileLock.csproj
+
+      - name: Publish (self-contained single exe)
+        run: >
+          dotnet publish src/FileLock.csproj
+          -c Release
+          -r win-x64
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:Version=${{ github.event.inputs.version }}
+          -o publish
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y
+
+      - name: Build installer (バージョンをファイル名に反映)
+        shell: pwsh
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
+            "/DMyAppVersion=${{ github.event.inputs.version }}" `
+            installer\setup.iss
+
+      - name: Create GitHub Release（アーティファクトは出さず直接リリース）
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          name: FileLock ${{ github.event.inputs.version }}
+          files: installer/Output/FileLock-Setup-${{ github.event.inputs.version }}.exe
