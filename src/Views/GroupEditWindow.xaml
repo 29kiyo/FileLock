@@ -1,8 +1,8 @@
 <Window x:Class="FileLockApp.Views.GroupEditWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="ロックグループの設定" Height="480" Width="440" WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
-    <StackPanel Margin="16">
+        Title="ロックグループの設定" Width="440" SizeToContent="Height" WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
+    <StackPanel Margin="16,16,16,20">
         <TextBlock Text="グループ名"/>
         <TextBox x:Name="NameBox" Margin="0,4,0,10"/>
 

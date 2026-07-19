@@ -1,8 +1,8 @@
 <Window x:Class="FileLockApp.Views.TempUnlockWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="一時アンロック" Height="260" Width="400" WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
-    <StackPanel Margin="16">
+        Title="一時アンロック" Width="400" SizeToContent="Height" WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
+    <StackPanel Margin="16,16,16,20">
         <TextBlock x:Name="TitleText" TextWrapping="Wrap" Margin="0,0,0,14"/>
         <TextBlock Text="解除する時間（時間単位、小数可）"/>
         <TextBox x:Name="HoursBox" Text="1" Margin="0,4,0,14"/>

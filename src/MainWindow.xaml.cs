@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -112,6 +113,77 @@ namespace FileLockApp
             _settings.Groups.Remove(group);
             SettingsStore.Save(_settings);
             RefreshTree();
+        }
+
+        private void OpenFileButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (GroupTree.SelectedItem is not TreeViewItem { Tag: string path })
+            {
+                MessageBox.Show(this, "開くファイルを選択してください。");
+                return;
+            }
+            OpenLockedFile(path);
+        }
+
+        private void GroupTree_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            var item = FindAncestor<TreeViewItem>((DependencyObject)e.OriginalSource);
+            if (item?.Tag is string path)
+                OpenLockedFile(path);
+        }
+
+        /// <summary>
+        /// ロック中のファイルをパスワード確認のうえ一時的に解除し、既定のアプリで開く。
+        /// 開いたアプリを閉じると自動的に再ロックされる。
+        /// </summary>
+        private void OpenLockedFile(string path)
+        {
+            var group = _settings.Groups.FirstOrDefault(g => g.FilePaths.Contains(path));
+            if (group == null) return;
+
+            if (!RequirePassword(group, $"「{path}」を開くにはパスワードを入力してください")) return;
+
+            LockService.Unlock(path, group.IncludeSubfolders);
+            RefreshTree();
+
+            try
+            {
+                var psi = new ProcessStartInfo(path) { UseShellExecute = true };
+                var process = Process.Start(psi);
+
+                if (process != null && !process.HasExited)
+                {
+                    process.EnableRaisingEvents = true;
+                    process.Exited += (_, _) =>
+                    {
+                        // 開いたアプリが閉じられたタイミングで自動的に再ロックする
+                        Dispatcher.Invoke(() =>
+                        {
+                            LockService.Lock(path, group.IncludeSubfolders);
+                            RefreshTree();
+                        });
+                    };
+                }
+                else
+                {
+                    // 既に起動している別インスタンスに委譲された等でプロセスの終了を検知できない場合、
+                    // 保険として一定時間後に自動で再ロックする
+                    var until = DateTime.UtcNow.AddHours(1);
+                    UnlockScheduler.ScheduleRelock(group.Id, until);
+                    MessageBox.Show(this,
+                        "ファイルを開きました。既に起動しているアプリで開かれた可能性があり、閉じたタイミングを検知できないため、\n" +
+                        "安全のため1時間後に自動で再ロックされます（グループ全体が対象になります）。");
+                }
+            }
+            catch (Exception ex)
+            {
+                // 開けなかった場合はロックを元に戻す
+                LockService.Lock(path, group.IncludeSubfolders);
+                RefreshTree();
+                MessageBox.Show(this, $"ファイルを開けませんでした: {ex.Message}");
+            }
+
+            SettingsStore.Save(_settings);
         }
 
         private void AddFileButton_Click(object sender, RoutedEventArgs e)
@@ -269,21 +341,53 @@ namespace FileLockApp
 
         private void GroupTree_DragOver(object sender, DragEventArgs e)
         {
-            e.Effects = e.Data.GetDataPresent(typeof(TreeViewItem)) ? DragDropEffects.Move : DragDropEffects.None;
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+                e.Effects = DragDropEffects.Copy; // エクスプローラーからの新規ファイル追加
+            else if (e.Data.GetDataPresent(typeof(TreeViewItem)))
+                e.Effects = DragDropEffects.Move; // グループ間でのファイル移動
+            else
+                e.Effects = DragDropEffects.None;
             e.Handled = true;
         }
 
         private void GroupTree_Drop(object sender, DragEventArgs e)
         {
+            var targetItem = FindAncestor<TreeViewItem>((DependencyObject)e.OriginalSource);
+            var targetGroup = targetItem?.Tag as LockGroup
+                ?? (targetItem?.Tag is string tPath ? _settings.Groups.FirstOrDefault(g => g.FilePaths.Contains(tPath)) : null)
+                ?? GetSelectedGroup(); // ドロップ位置にグループが無い場合は現在選択中のグループにフォールバック
+
+            // --- エクスプローラーなど外部からのファイルドロップ: 選んだグループへ追加(パスワード不要) ---
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                if (targetGroup == null)
+                {
+                    MessageBox.Show(this, "追加先のグループの上にドロップするか、事前にグループを選択してください。");
+                    return;
+                }
+
+                var droppedPaths = (string[])e.Data.GetData(DataFormats.FileDrop)!;
+                int added = 0;
+                foreach (var p in droppedPaths)
+                {
+                    if (targetGroup.FilePaths.Contains(p)) continue;
+                    targetGroup.FilePaths.Add(p);
+                    LockService.Lock(p, targetGroup.IncludeSubfolders);
+                    added++;
+                }
+
+                if (added > 0)
+                {
+                    SettingsStore.Save(_settings);
+                    RefreshTree();
+                }
+                return;
+            }
+
+            // --- グループ間でのファイル移動(内部ドラッグ): 移動元グループのパスワードが必要 ---
             if (!e.Data.GetDataPresent(typeof(TreeViewItem))) return;
             var sourceItem = (TreeViewItem)e.Data.GetData(typeof(TreeViewItem))!;
             if (sourceItem.Tag is not string path) return;
-
-            var targetItem = FindAncestor<TreeViewItem>((DependencyObject)e.OriginalSource);
-            if (targetItem == null) return;
-
-            var targetGroup = targetItem.Tag as LockGroup
-                ?? (targetItem.Tag is string tPath ? _settings.Groups.FirstOrDefault(g => g.FilePaths.Contains(tPath)) : null);
             if (targetGroup == null) return;
 
             var sourceGroup = _settings.Groups.FirstOrDefault(g => g.FilePaths.Contains(path));

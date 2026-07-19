@@ -4,12 +4,13 @@
         Title="FileLock 管理画面" Height="580" Width="860" MinHeight="420" MinWidth="640">
     <DockPanel Margin="10">
         <TextBlock DockPanel.Dock="Top" Margin="0,0,0,8" TextWrapping="Wrap" Foreground="#555"
-                   Text="グループを選んでファイルを追加・削除できます。ファイル項目は別のグループへドラッグ&amp;ドロップで移動できます（移動元グループのパスワードが必要です）。"/>
+                   Text="グループを選んでファイルを追加・削除できます。エクスプローラーからファイルをグループへ直接ドラッグ&amp;ドロップして追加することもできます。ファイル項目は別のグループへドラッグ&amp;ドロップで移動できます（移動元グループのパスワードが必要です）。"/>
         <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,10">
             <Button x:Name="AddGroupButton" Content="グループ追加" Padding="8,4" Margin="0,0,6,6" Click="AddGroupButton_Click"/>
             <Button x:Name="EditGroupButton" Content="グループ設定" Padding="8,4" Margin="0,0,6,6" Click="EditGroupButton_Click"/>
             <Button x:Name="DeleteGroupButton" Content="グループ削除" Padding="8,4" Margin="0,0,6,6" Click="DeleteGroupButton_Click"/>
             <Button x:Name="AddFileButton" Content="ファイル追加" Padding="8,4" Margin="0,0,6,6" Click="AddFileButton_Click"/>
+            <Button x:Name="OpenFileButton" Content="開く" Padding="8,4" Margin="0,0,6,6" Click="OpenFileButton_Click"/>
             <Button x:Name="RemoveFileButton" Content="ファイル削除" Padding="8,4" Margin="0,0,6,6" Click="RemoveFileButton_Click"/>
             <Button x:Name="TempUnlockButton" Content="一時アンロック" Padding="8,4" Margin="0,0,6,6" Click="TempUnlockButton_Click"/>
             <Button x:Name="ExportButton" Content="テンプレート出力" Padding="8,4" Margin="0,0,6,6" Click="ExportButton_Click"/>
@@ -19,6 +20,17 @@
         <TreeView x:Name="GroupTree" AllowDrop="True"
                   Drop="GroupTree_Drop" DragOver="GroupTree_DragOver"
                   PreviewMouseLeftButtonDown="GroupTree_PreviewMouseLeftButtonDown"
-                  MouseMove="GroupTree_MouseMove"/>
+                  MouseMove="GroupTree_MouseMove"
+                  MouseDoubleClick="GroupTree_MouseDoubleClick">
+            <TreeView.ItemContainerStyle>
+                <Style TargetType="TreeViewItem">
+                    <!-- Backgroundを明示的に設定することで、行全体（テキスト以外の余白部分も含む）で
+                         ドラッグ&ドロップのヒットテストが効くようにする -->
+                    <Setter Property="Background" Value="Transparent"/>
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    <Setter Property="Padding" Value="2"/>
+                </Style>
+            </TreeView.ItemContainerStyle>
+        </TreeView>
     </DockPanel>
 </Window>
